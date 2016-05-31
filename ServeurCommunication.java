@@ -15,10 +15,11 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
     Messenger messager;
     ServerSocket socketAddress;
     NsdServiceInfo serviceInfo;
+    NsdManager mNsdManager;
     private String SERVICE_NAME = "Deptinfo";
     private String SERVICE_TYPE = "_http._tcp";
     private Integer mLocalPort;
-    NsdManager mNsdManager = (NsdManager) getSystemService(getApplicationContext().NSD_SERVICE);
+
     public ServeurCommunication() {
     }
 
@@ -29,10 +30,11 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
         messager = (Messenger) extras.get("messageserver");
         Message msg = Message.obtain();
         Bundle bundle = new Bundle();
-        serviceInfo = new NsdServiceInfo(); 
+        serviceInfo = new NsdServiceInfo();
         serviceInfo.setServiceName(SERVICE_NAME);
         serviceInfo.setServiceType(SERVICE_TYPE);
         serviceInfo.setPort(mLocalPort);
+        mNsdManager = (NsdManager) getSystemService(getApplicationContext().NSD_SERVICE);
         mNsdManager.registerService(serviceInfo,  NsdManager.PROTOCOL_DNS_SD, this);
 
        /* bundle.putInt("serveur", 1);
