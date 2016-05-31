@@ -8,8 +8,17 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
+import android.util.Log;
+import android.view.View;
+
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
+import java.net.Socket;
 
 public class ServeurCommunication extends Service implements NsdManager.RegistrationListener {
     Messenger messager;
@@ -19,6 +28,7 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
     private String SERVICE_NAME = "Deptinfo";
     private String SERVICE_TYPE = "_http._tcp";
     private Integer mLocalPort;
+    ServiceInfoServer serviceInfoServer;
 
     public ServeurCommunication() {
     }
@@ -30,53 +40,61 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
         messager = (Messenger) extras.get("messageserver");
         Message msg = Message.obtain();
         Bundle bundle = new Bundle();
+        try {
+            socketAddress = new ServerSocket(0);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        mLocalPort = socketAddress.getLocalPort();
+        socketAddress.getLocalSocketAddress();
         serviceInfo = new NsdServiceInfo();
         serviceInfo.setServiceName(SERVICE_NAME);
         serviceInfo.setServiceType(SERVICE_TYPE);
         serviceInfo.setPort(mLocalPort);
         mNsdManager = (NsdManager) getSystemService(getApplicationContext().NSD_SERVICE);
         mNsdManager.registerService(serviceInfo,  NsdManager.PROTOCOL_DNS_SD, this);
+        serviceInfoServer = new ServiceInfoServer();
+        serviceInfoServer.setPort(mLocalPort);
+        serviceInfoServer.setName(SERVICE_NAME);
+        if(mLocalPort != null){
+            serviceInfoServer.setStatut(true);
+        }
+        else{
+            serviceInfoServer.setStatut(false);
+        }
+        //initUIThread(serviceInfo.getServiceName(),serviceInfo.getPort(),true);
 
-       /* bundle.putInt("serveur", 1);
+            bundle.putSerializable("serveurservice", serviceInfoServer);
+            msg.setData(bundle);
+            try {
+                messager.send(msg);
+            }
+            catch (RemoteException e){
+
+            }
+        return 1;
+    }
+
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Message msg = Message.obtain();
+        Bundle bundle = new Bundle();
+        bundle.putBoolean("stopService", true);
         msg.setData(bundle);
         try {
             messager.send(msg);
         }
         catch (RemoteException e){
 
-        }*/
-        return 1;
-    }
-
-    public boolean getState(){
-        if(socketAddress == null){
-            return false;
         }
-        else {
-            return true;
-        }
-    }
-
-   /* public String getAdress(){
-
-        return socketAddress.getLocalSocketAddress();
-    }*/
-
-    public int getPort(){
-
-        return socketAddress.getLocalPort();
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        Runnable connect = new connectSocket();
-        new Thread(connect).start();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
     }
 
     @Override
@@ -96,11 +114,8 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
             }
             while (!Thread.currentThread().isInterrupted()) {
 
-
             }
-
         }
-
     }
 
     @Override
@@ -124,4 +139,7 @@ public class ServeurCommunication extends Service implements NsdManager.Registra
         mNsdManager.unregisterService(this);
 
     }
+
+
+
 }
